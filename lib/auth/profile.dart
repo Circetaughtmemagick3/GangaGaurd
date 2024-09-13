@@ -38,7 +38,8 @@ class ProfilePage extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: AssetImage('assets/profile_picture.jpg'),
+                  backgroundImage:
+                      AssetImage('lib/utils/images/ratanvaish.jpeg'),
                 ),
                 SizedBox(height: 10),
                 Text(
@@ -64,7 +65,7 @@ class ProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoTile(Icons.location_on, 'Location', 'New Delhi, India'),
-          _buildInfoTile(Icons.email, 'Email', 'john.doe@example.com'),
+          _buildInfoTile(Icons.email, 'Email', 'ratan.vaish@example.com'),
           _buildInfoTile(Icons.phone, 'Phone', '+91 98765 43210'),
         ],
       ),

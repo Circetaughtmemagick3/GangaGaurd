@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:fl_chart/fl_chart.dart'; // Ensure this import is in place
 import 'package:jalshakti/auth/profile.dart';
+import 'package:jalshakti/notif.dart';
 import 'package:jalshakti/rakshak.dart';
 
 void main() {
@@ -16,7 +17,16 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: HomePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => HomePage(),
+        '/profile': (context) => ProfilePage(),
+        '/notif': (context) => Notifpage(),
+        '/chat': (context) => RakshakChatbotPage(),
+      },
+      onUnknownRoute: (settings) => MaterialPageRoute(
+        builder: (context) => HomePage(), // Default route
+      ),
     );
   }
 }
@@ -29,11 +39,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    HomeContent(),
-    RakshakChatbotPage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,22 +49,26 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.blue.shade900,
         centerTitle: true,
       ),
-      drawer: _buildDrawer(),
-      body: _pages[_currentIndex],
+      drawer: _buildDrawer(context),
+      body: _getPage(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
+        backgroundColor: Colors.blue.shade900,
+        selectedItemColor: Colors.tealAccent,
+        unselectedItemColor: Colors.white,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        backgroundColor: Colors.blue.shade900,
-        selectedItemColor: Colors.tealAccent,
-        unselectedItemColor: Colors.white,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat),
@@ -70,7 +79,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDrawer() {
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0:
+        return HomeContent();
+      case 1:
+        return Notifpage();
+      case 2:
+        return RakshakChatbotPage();
+      default:
+        return HomeContent();
+    }
+  }
+
+  Widget _buildDrawer(BuildContext context) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -88,21 +110,19 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           ListTile(
-              leading: Icon(Icons.person, color: Colors.blue.shade900),
-              title: Text('My Profile'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          ProfilePage()), // Replace 'ProfilePage' with the actual page class
-                );
-              }),
+            leading: Icon(Icons.person, color: Colors.blue.shade900),
+            title: Text('My Profile'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilePage()),
+              );
+            },
+          ),
           ListTile(
             leading: Icon(Icons.exit_to_app, color: Colors.blue.shade900),
             title: Text('Logout'),
             onTap: () {
-              Navigator.pop(context);
               // TODO: Implement logout logic
             },
           ),
@@ -120,10 +140,15 @@ class HomeContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildWarningBand(),
-          _buildLocationInfo(), // Moved warning band to the top
+          _buildLocationInfo(),
           WeeklyDischargeGraph(),
-          _buildWeatherInfo(),
+          _buildFloodInfo(),
+          _buildMostPollutedSection(),
+          _buildWeatherForecastSection(),
           _buildGangaRiverBasinSection(),
+          SizedBox(
+            height: 20,
+          )
         ],
       ),
     );
@@ -182,6 +207,35 @@ class HomeContent extends StatelessWidget {
     );
   }
 
+  Widget _buildWeatherForecastSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.all(16),
+          child: Text(
+            'Weather Forecast',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue.shade900,
+            ),
+          ),
+        ),
+        Container(
+          height: 160,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            children: List.generate(5, (index) {
+              return _buildWeatherTile();
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWeatherTile() {
     return Container(
       width: 140,
@@ -208,8 +262,15 @@ class HomeContent extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors
-                  .blue.shade900, // Matching the color with "Ganga River Basin"
+              color: Colors.blue.shade900,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            '${DateTime.now().day}/${DateTime.now().month}, ${DateTime.now().hour}:${DateTime.now().minute}',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
             ),
           ),
           SizedBox(height: 8),
@@ -311,8 +372,149 @@ class HomeContent extends StatelessWidget {
   }
 }
 
+Widget _buildMostPollutedSection() {
+  return Container(
+    padding: EdgeInsets.all(16),
+    margin: EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.red.shade50,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: Colors.red.shade200),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Most Polluted Area',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.red.shade900,
+          ),
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Location:',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red.shade700,
+              ),
+            ),
+            Text(
+              'Kanpur, Uttar Pradesh',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade900,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Pollution Level:',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red.shade700,
+              ),
+            ),
+            Text(
+              'Severe',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildFloodInfo() {
+  return Container(
+    padding: EdgeInsets.all(16),
+    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.blue.shade100.withOpacity(0.5),
+          spreadRadius: 2,
+          blurRadius: 5,
+          offset: Offset(0, 3),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Flood Alert',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade900,
+          ),
+        ),
+        SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Chance of Flood:',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.blue.shade700,
+              ),
+            ),
+            Text(
+              '60%',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Location:',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.blue.shade700,
+              ),
+            ),
+            Text(
+              'Varanasi, Uttar Pradesh',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 class WeeklyDischargeGraph extends StatelessWidget {
-  final List<FlSpot> dischargeData = [
+  final List<FlSpot> runoffData = [
     FlSpot(0, 1500),
     FlSpot(1, 1600),
     FlSpot(2, 1550),
@@ -322,13 +524,33 @@ class WeeklyDischargeGraph extends StatelessWidget {
     FlSpot(6, 1550),
   ];
 
+  final List<FlSpot> dischargeData = [
+    FlSpot(0, 1300),
+    FlSpot(1, 1400),
+    FlSpot(2, 1450),
+    FlSpot(3, 1600),
+    FlSpot(4, 1700),
+    FlSpot(5, 1550),
+    FlSpot(6, 1450),
+  ];
+
+  final List<FlSpot> floodMagnitudeData = [
+    FlSpot(0, 100),
+    FlSpot(1, 120),
+    FlSpot(2, 110),
+    FlSpot(3, 150),
+    FlSpot(4, 180),
+    FlSpot(5, 140),
+    FlSpot(6, 130),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 250, // Increased the size of the graph
+      height: 350, // Reduced height to prevent overflow
       padding: EdgeInsets.all(16),
       child: Card(
-        color: Colors.white, // Set background to white
+        color: Colors.white,
         elevation: 4,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -336,9 +558,9 @@ class WeeklyDischargeGraph extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Weekly Discharge',
+                'Weekly River Data',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue.shade900,
                 ),
@@ -347,70 +569,133 @@ class WeeklyDischargeGraph extends StatelessWidget {
               Expanded(
                 child: LineChart(
                   LineChartData(
-                    gridData: FlGridData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: Colors.blue.withOpacity(0.1),
+                          strokeWidth: 1,
+                        );
+                      },
+                      getDrawingVerticalLine: (value) {
+                        return FlLine(
+                          color: Colors.blue.withOpacity(0.1),
+                          strokeWidth: 1,
+                        );
+                      },
+                    ),
                     titlesData: FlTitlesData(
                       leftTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: true),
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              '${value.toInt()}',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
+                          reservedSize: 30,
                           getTitlesWidget: (value, meta) {
-                            String text = '';
-                            switch (value.toInt()) {
-                              case 0:
-                                text = 'Mon';
-                                break;
-                              case 1:
-                                text = 'Tue';
-                                break;
-                              case 2:
-                                text = 'Wed';
-                                break;
-                              case 3:
-                                text = 'Thu';
-                                break;
-                              case 4:
-                                text = 'Fri';
-                                break;
-                              case 5:
-                                text = 'Sat';
-                                break;
-                              case 6:
-                                text = 'Sun';
-                                break;
-                            }
-                            return Text(text);
+                            const days = [
+                              'Mon',
+                              'Tue',
+                              'Wed',
+                              'Thu',
+                              'Fri',
+                              'Sat',
+                              'Sun'
+                            ];
+                            return Text(
+                              days[value.toInt()],
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            );
                           },
                         ),
                       ),
+                      rightTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    borderData: FlBorderData(show: true),
+                    borderData: FlBorderData(
+                        show: true, border: Border.all(color: Colors.black12)),
                     minX: 0,
                     maxX: 6,
-                    minY: 1000,
+                    minY: 0,
                     maxY: 2000,
                     lineBarsData: [
-                      LineChartBarData(
-                        spots: dischargeData,
-                        isCurved: true,
-                        color: Colors.blue.shade900,
-                        barWidth: 3,
-                        isStrokeCapRound: true,
-                        dotData: FlDotData(show: false),
-                        belowBarData: BarAreaData(show: false),
-                      ),
+                      _lineChartBarData(runoffData, Colors.blue),
+                      _lineChartBarData(dischargeData, Colors.green),
+                      _lineChartBarData(floodMagnitudeData, Colors.red),
                     ],
                   ),
                 ),
               ),
-              SizedBox(
-                height: 10,
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildLegendItem('Runoff', Colors.blue),
+                  SizedBox(width: 20),
+                  _buildLegendItem('Discharge', Colors.green),
+                  SizedBox(width: 20),
+                  _buildLegendItem('Flood Magnitude', Colors.red),
+                ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  LineChartBarData _lineChartBarData(List<FlSpot> spots, Color color) {
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      color: color,
+      barWidth: 3,
+      isStrokeCapRound: true,
+      dotData: FlDotData(show: false),
+      belowBarData: BarAreaData(show: false),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+        SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
